@@ -157,6 +157,7 @@ export async function fetchAllCourses() {
     author: course.author,
     videoUrl: course.videoUrl || "",        // Link video on-chain
     description: course.description || "",  // Mô tả on-chain
+    imageUrl: course.imageUrl || "",        // Thumbnail on-chain
     totalRating: Number(course.totalRating || 0),
     reviewCount: Number(course.reviewCount || 0)
   }));
@@ -229,11 +230,11 @@ export async function purchaseCourse(signer, courseId, priceWei) {
  * @param {string} priceEth - Giá khóa học (đơn vị ETH, ví dụ: "0.01")
  * @returns {Object} Receipt giao dịch
  */
-export async function createCourse(signer, title, priceEth, videoUrl, description) {
+export async function createCourse(signer, title, priceEth, videoUrl, description, imageUrl) {
   const contract = getContractInstance(signer);
   const priceWei = ethers.parseEther(priceEth);
-  // Gọi hàm createCourse mới với 4 tham số
-  const tx = await contract.createCourse(title, priceWei, videoUrl, description || "");
+  // Gọi hàm createCourse mới với 5 tham số
+  const tx = await contract.createCourse(title, priceWei, videoUrl, description || "", imageUrl || "");
   const receipt = await tx.wait();
   return receipt;
 }

@@ -17,6 +17,7 @@ contract CoursePlatform {
         address author;    // Địa chỉ ví của tác giả/admin tạo khóa học
         string videoUrl;   // Link video bài giảng (YouTube URL hoặc link trực tiếp)
         string description;// Mô tả ngắn về khóa học
+        string imageUrl;   // URL hình ảnh thumbnail của khóa học
         uint totalRating;  // Tổng số sao đánh giá (để tính trung bình)
         uint reviewCount;  // Tổng số lượt đánh giá
     }
@@ -86,13 +87,15 @@ contract CoursePlatform {
     /// @param _price Giá khóa học (đơn vị: Wei)
     /// @param _videoUrl Link video bài giảng YouTube
     /// @param _description Mô tả ngắn về khóa học
-    function createCourse(string memory _title, uint _price, string memory _videoUrl, string memory _description) public onlyAdmin {
+    /// @param _imageUrl URL hình ảnh thumbnail
+    function createCourse(string memory _title, uint _price, string memory _videoUrl, string memory _description, string memory _imageUrl) public onlyAdmin {
         require(_price > 0, "Gia khoa hoc phai lon hon 0");
         require(bytes(_title).length > 0, "Tieu de khoa hoc khong duoc de trong");
         require(bytes(_videoUrl).length > 0, "Link video khong duoc de trong");
+        require(bytes(_imageUrl).length > 0, "Link anh khong duoc de trong");
 
         courseCount++;
-        courses[courseCount] = Course(courseCount, _title, _price, msg.sender, _videoUrl, _description, 0, 0);
+        courses[courseCount] = Course(courseCount, _title, _price, msg.sender, _videoUrl, _description, _imageUrl, 0, 0);
         
         // Mặc định Admin sở hữu khóa học vừa tạo
         ownedCourses[msg.sender][courseCount] = true;

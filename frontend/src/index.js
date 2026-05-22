@@ -3,11 +3,16 @@ import ReactDOM from 'react-dom/client';
 import './index.css';
 import App from './App';
 import reportWebVitals from './reportWebVitals';
+import { Web3Provider } from './context/Web3Context';
+import { Toaster } from 'react-hot-toast';
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
   <React.StrictMode>
-    <App />
+    <Web3Provider>
+      <App />
+      <Toaster position="top-right" />
+    </Web3Provider>
   </React.StrictMode>
 );
 

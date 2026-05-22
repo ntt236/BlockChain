@@ -1,150 +1,84 @@
-/**
- * CourseCard.js - Component hiển thị thông tin một khóa học
- * 
- * Hiển thị:
- * - Hình minh họa khóa học (gradient + icon)
- * - Tiêu đề khóa học
- * - Giá (ETH)
- * - Tác giả (rút gọn)
- * - Nút "Mua ngay" hoặc nhãn "Đã sở hữu"
- */
+import React from "react";
+import { Star, Loader2, PlayCircle, Users } from "lucide-react";
 
-import React, { useState } from "react";
+export default function CourseCard({ course, isOwned, onBuy, loading, onSelect }) {
+  const handleBuy = (e) => {
+    e.stopPropagation();
+    onBuy();
+  };
 
-// Mảng gradient màu sắc cho card thumbnail (luân phiên theo ID)
-const GRADIENTS = [
-  "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
-  "linear-gradient(135deg, #f093fb 0%, #f5576c 100%)",
-  "linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)",
-  "linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)",
-  "linear-gradient(135deg, #fa709a 0%, #fee140 100%)",
-  "linear-gradient(135deg, #a18cd1 0%, #fbc2eb 100%)",
-  "linear-gradient(135deg, #fccb90 0%, #d57eeb 100%)",
-  "linear-gradient(135deg, #e0c3fc 0%, #8ec5fc 100%)",
-];
-
-// Icon SVG cho từng khóa học (luân phiên theo ID) 
-const COURSE_ICONS = [
-  // Code icon
-  <svg key="code" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>,
-  // Blockchain icon
-  <svg key="block" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>,
-  // Design icon
-  <svg key="design" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 12h8"/><path d="M12 8v8"/></svg>,
-  // Database icon
-  <svg key="db" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>,
-];
-
-/**
- * Rút gọn địa chỉ ví tác giả
- */
-function shortenAddress(address) {
-  if (!address) return "";
-  return `${address.slice(0, 6)}...${address.slice(-4)}`;
-}
-
-export default function CourseCard({ course, isOwned, onBuy, onStudy, loading }) {
-  const [buying, setBuying] = useState(false);
-
-  // Chọn gradient và icon dựa trên ID khóa học
-  const gradient = GRADIENTS[(course.id - 1) % GRADIENTS.length];
-  const icon = COURSE_ICONS[(course.id - 1) % COURSE_ICONS.length];
-
-  /**
-   * Xử lý sự kiện nhấn nút "Mua ngay"
-   * Gọi callback onBuy và quản lý trạng thái loading
-   */
-  const handleBuy = async () => {
-    setBuying(true);
-    try {
-      await onBuy(course);
-    } catch (error) {
-      console.error("Lỗi khi mua khóa học:", error);
-    } finally {
-      setBuying(false);
-    }
+  const getRating = () => {
+    if (course.reviewCount === 0) return 0;
+    return (course.totalRating / course.reviewCount).toFixed(1);
   };
 
   return (
-    <div className={`course-card ${isOwned ? "owned" : ""}`}>
-      {/* Thumbnail với gradient và icon */}
-      <div className="course-thumbnail" style={{ background: gradient }}>
-        <div className="course-icon">{icon}</div>
-        {/* Nhãn "Đã sở hữu" nếu đã mua */}
+    <div 
+      className="group relative flex flex-col overflow-hidden rounded-2xl border border-gray-800 bg-gray-900/50 shadow-sm transition-all hover:-translate-y-1 hover:shadow-xl hover:shadow-blue-500/10 cursor-pointer"
+      onClick={() => onSelect && onSelect(course)}
+    >
+      {/* Thumbnail */}
+      <div className="aspect-video w-full overflow-hidden bg-gray-800 relative">
+        <img
+          src={course.imageUrl || "https://placehold.co/600x400/1f2937/a1a1aa?text=Course+Image"}
+          alt={course.title}
+          className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+          onError={(e) => e.target.src="https://placehold.co/600x400/1f2937/a1a1aa?text=Course+Image"}
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-gray-950 to-transparent opacity-60"></div>
+        
+        {/* Status Badge */}
         {isOwned && (
-          <div className="owned-badge">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-              <polyline points="20 6 9 17 4 12" />
-            </svg>
+          <div className="absolute top-3 right-3 rounded-full bg-emerald-500/90 px-2.5 py-1 text-xs font-bold text-white shadow-sm backdrop-blur-sm">
             Đã sở hữu
           </div>
         )}
       </div>
 
-      {/* Nội dung card */}
-      <div className="course-content">
-        {/* Tiêu đề */}
-        <h3 className="course-title">{course.title}</h3>
+      {/* Content */}
+      <div className="flex flex-1 flex-col p-5">
+        <h3 className="mb-2 line-clamp-2 text-lg font-bold leading-snug text-gray-100 group-hover:text-blue-400 transition-colors">
+          {course.title}
+        </h3>
+        
+        <p className="mb-4 line-clamp-2 text-sm text-gray-400 flex-1">
+          {course.description || "Chưa có mô tả chi tiết."}
+        </p>
 
-        {/* Thông tin tác giả & Đánh giá */}
-        <div className="course-meta">
-          <p className="course-author">
-            <span className="author-label">Giảng viên:</span>
-            <span className="author-address">{shortenAddress(course.author)}</span>
-          </p>
-          <div className="course-rating">
-            <span className="rating-star">⭐</span>
-            <span className="rating-score">
-              {course.reviewCount > 0 
-                ? (course.totalRating / course.reviewCount).toFixed(1) 
-                : "Chưa có"}
-            </span>
-            <span className="rating-count">({course.reviewCount})</span>
-          </div>
-        </div>
-
-        {/* Footer: Giá và nút hành động */}
-        <div className="course-footer">
-          {/* Giá ETH */}
-          <div className="course-price">
-            <span className="price-icon">◆</span>
-            <span className="price-value">{course.priceEth}</span>
-            <span className="price-unit">ETH</span>
+        <div className="mt-auto">
+          {/* Metadata */}
+          <div className="mb-4 flex items-center justify-between text-sm text-gray-500">
+            <div className="flex items-center gap-1.5">
+              <Star className="h-4 w-4 text-amber-500 fill-amber-500" />
+              <span className="font-medium text-gray-300">{getRating()}</span>
+              <span>({course.reviewCount})</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <Users className="h-4 w-4" />
+              <span>BlockCourse</span>
+            </div>
           </div>
 
-          {/* Nút hành động */}
-          {isOwned ? (
-            // Đã sở hữu - hiện nút "Vào học"
-            <button className="btn-access" onClick={() => onStudy && onStudy(course)}>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <polygon points="5 3 19 12 5 21 5 3"/>
-              </svg>
-              Vào học
-            </button>
-          ) : (
-            // Chưa mua - hiện nút "Mua ngay"
-            <button
-              className="btn-buy"
-              onClick={handleBuy}
-              disabled={buying || loading}
-            >
-              {buying ? (
-                // Hiển thị spinner khi đang xử lý
-                <>
-                  <div className="spinner"></div>
-                  Đang xử lý...
-                </>
-              ) : (
-                <>
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/>
-                    <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/>
-                  </svg>
-                  Mua ngay
-                </>
-              )}
-            </button>
-          )}
+          <div className="flex items-center justify-between pt-4 border-t border-gray-800/60">
+            <div className="flex flex-col">
+              <span className="text-xs text-gray-500 uppercase tracking-wider font-semibold">Giá</span>
+              <span className="text-lg font-extrabold text-emerald-400">{course.priceEth} ETH</span>
+            </div>
+            
+            {isOwned ? (
+              <button disabled className="flex items-center gap-2 rounded-lg bg-gray-800 px-4 py-2 text-sm font-semibold text-gray-300 cursor-not-allowed">
+                <PlayCircle className="h-4 w-4" /> Đã có sẵn
+              </button>
+            ) : (
+              <button
+                onClick={handleBuy}
+                disabled={loading}
+                className="relative overflow-hidden rounded-lg bg-blue-600 px-5 py-2 text-sm font-semibold text-white transition hover:bg-blue-500 hover:shadow-lg hover:shadow-blue-500/25 disabled:opacity-50 disabled:hover:bg-blue-600"
+              >
+                {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : "Mua ngay"}
+              </button>
+            )}
+          </div>
         </div>
       </div>
     </div>
