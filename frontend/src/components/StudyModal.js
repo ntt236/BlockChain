@@ -83,6 +83,8 @@ export default function StudyModal({ course, onClose }) {
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                 allowFullScreen
               />
+            ) : course.videoUrl && !course.videoUrl.includes("youtube.com") && !course.videoUrl.includes("youtu.be") ? (
+              <video src={course.videoUrl} controls autoPlay className="h-full w-full object-contain bg-black" />
             ) : (
               <div className="flex h-full w-full flex-col items-center justify-center border border-dashed border-gray-800 bg-gray-900">
                 <PlayCircle className="h-16 w-16 mb-4 text-gray-600" />

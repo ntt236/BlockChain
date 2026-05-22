@@ -3,19 +3,24 @@ import { useWeb3 } from "../context/Web3Context";
 import { getAllBuyers } from "../ContractIntegration";
 import { 
   Package, LayoutDashboard, Library, Users, LogOut,
-  Wallet, BookOpen, PlusCircle
+  Wallet, BookOpen, PlusCircle, UploadCloud
 } from "lucide-react";
 import { toast } from "react-hot-toast";
+import { uploadToIPFS } from "../utils/pinata";
 
 export default function AdminPanel({ onExit }) {
-  const { createCourse, loading, courses, contractBalance, withdrawFunds } = useWeb3();
+  const { createCourse, updateCourse, loading, courses, contractBalance, withdrawFunds } = useWeb3();
   
   const [title, setTitle] = useState("");
   const [price, setPrice] = useState("");
   const [videoUrl, setVideoUrl] = useState("");
   const [imageUrl, setImageUrl] = useState("");
   const [description, setDescription] = useState("");
+  const [editCourseId, setEditCourseId] = useState(null);
   
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const [uploadingVideo, setUploadingVideo] = useState(false);
+
   const [activeView, setActiveView] = useState("overview"); 
   const [buyers, setBuyers] = useState([]);
 
@@ -31,12 +36,30 @@ export default function AdminPanel({ onExit }) {
     if (!imageUrl.trim()) return toast.error("Link ảnh thumbnail không được trống!");
 
     try {
-      await createCourse(title.trim(), price, videoUrl.trim(), description.trim(), imageUrl.trim());
-      setTitle(""); setPrice(""); setVideoUrl(""); setImageUrl(""); setDescription("");
+      if (editCourseId) {
+        await updateCourse(editCourseId, title.trim(), price, videoUrl.trim(), description.trim(), imageUrl.trim());
+      } else {
+        await createCourse(title.trim(), price, videoUrl.trim(), description.trim(), imageUrl.trim());
+      }
+      resetForm();
       setActiveView("list");
     } catch (error) {
       // Error handled by context
     }
+  };
+
+  const resetForm = () => {
+    setTitle(""); setPrice(""); setVideoUrl(""); setImageUrl(""); setDescription(""); setEditCourseId(null);
+  };
+
+  const handleEdit = (course) => {
+    setEditCourseId(course.id);
+    setTitle(course.title);
+    setPrice(course.priceEth);
+    setVideoUrl(course.videoUrl);
+    setImageUrl(course.imageUrl || "");
+    setDescription(course.description || "");
+    setActiveView("create");
   };
 
   const getYouTubeId = (url) => {
@@ -46,11 +69,43 @@ export default function AdminPanel({ onExit }) {
   };
   const previewId = getYouTubeId(videoUrl);
 
+  const handleImageUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    try {
+      setUploadingImage(true);
+      const toastId = toast.loading("Đang tải ảnh lên IPFS...");
+      const ipfsUrl = await uploadToIPFS(file);
+      setImageUrl(ipfsUrl);
+      toast.success("Tải ảnh lên IPFS thành công!", { id: toastId });
+    } catch (error) {
+      toast.error(error.message || "Lỗi tải ảnh lên IPFS");
+    } finally {
+      setUploadingImage(false);
+    }
+  };
+
+  const handleVideoUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    try {
+      setUploadingVideo(true);
+      const toastId = toast.loading("Đang tải video lên IPFS... (Vui lòng chờ)");
+      const ipfsUrl = await uploadToIPFS(file);
+      setVideoUrl(ipfsUrl);
+      toast.success("Tải video lên IPFS thành công!", { id: toastId });
+    } catch (error) {
+      toast.error(error.message || "Lỗi tải video lên IPFS");
+    } finally {
+      setUploadingVideo(false);
+    }
+  };
+
   const renderViewTitle = () => {
     switch (activeView) {
       case "overview": return "Tổng quan hệ thống";
       case "list": return "Quản lý khóa học";
-      case "create": return "Tạo khóa học mới";
+      case "create": return editCourseId ? "Sửa khóa học" : "Tạo khóa học mới";
       case "users": return "Quản lý khách hàng";
       default: return "Admin Dashboard";
     }
@@ -80,7 +135,7 @@ export default function AdminPanel({ onExit }) {
           </button>
           <button 
             className={`flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${activeView === "create" ? "bg-gray-800 text-white" : "text-gray-400 hover:bg-gray-900 hover:text-white"}`}
-            onClick={() => setActiveView("create")}
+            onClick={() => { resetForm(); setActiveView("create"); }}
           >
             <PlusCircle className="h-4 w-4" /> Tạo khóa học mới
           </button>
@@ -181,16 +236,30 @@ export default function AdminPanel({ onExit }) {
                       placeholder="0.05" />
                   </div>
                   <div>
-                    <label className="mb-2 block text-sm font-medium text-gray-300">Link ảnh Thumbnail <span className="text-red-400">*</span></label>
-                    <input type="url" value={imageUrl} onChange={e => setImageUrl(e.target.value)} required disabled={loading}
-                      className="w-full rounded-lg border border-gray-700 bg-gray-800/50 px-4 py-2.5 text-white placeholder-gray-500 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500" 
-                      placeholder="https://example.com/image.jpg" />
+                    <label className="mb-2 block text-sm font-medium text-gray-300">Link ảnh Thumbnail (Hoặc tải lên IPFS) <span className="text-red-400">*</span></label>
+                    <div className="flex gap-2">
+                      <input type="text" value={imageUrl} onChange={e => setImageUrl(e.target.value)} required disabled={loading || uploadingImage}
+                        className="flex-1 rounded-lg border border-gray-700 bg-gray-800/50 px-4 py-2.5 text-white placeholder-gray-500 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500" 
+                        placeholder="https://... hoặc ipfs://..." />
+                      <label className="cursor-pointer flex items-center justify-center gap-2 rounded-lg bg-gray-800 px-4 py-2.5 font-medium text-gray-300 transition hover:bg-gray-700 hover:text-white">
+                        <UploadCloud className="h-4 w-4" />
+                        {uploadingImage ? "Đang tải..." : "Tải lên"}
+                        <input type="file" className="hidden" accept="image/*" onChange={handleImageUpload} disabled={uploadingImage || loading} />
+                      </label>
+                    </div>
                   </div>
                   <div>
-                    <label className="mb-2 block text-sm font-medium text-gray-300">Link Video (YouTube) <span className="text-red-400">*</span></label>
-                    <input type="url" value={videoUrl} onChange={e => setVideoUrl(e.target.value)} required disabled={loading}
-                      className="w-full rounded-lg border border-gray-700 bg-gray-800/50 px-4 py-2.5 text-white placeholder-gray-500 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500" 
-                      placeholder="https://youtube.com/watch?v=..." />
+                    <label className="mb-2 block text-sm font-medium text-gray-300">Link Video (Hoặc tải lên IPFS) <span className="text-red-400">*</span></label>
+                    <div className="flex gap-2">
+                      <input type="text" value={videoUrl} onChange={e => setVideoUrl(e.target.value)} required disabled={loading || uploadingVideo}
+                        className="flex-1 rounded-lg border border-gray-700 bg-gray-800/50 px-4 py-2.5 text-white placeholder-gray-500 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500" 
+                        placeholder="https://youtube.com/watch?v=... hoặc ipfs://..." />
+                      <label className="cursor-pointer flex items-center justify-center gap-2 rounded-lg bg-gray-800 px-4 py-2.5 font-medium text-gray-300 transition hover:bg-gray-700 hover:text-white">
+                        <UploadCloud className="h-4 w-4" />
+                        {uploadingVideo ? "Đang tải..." : "Tải lên"}
+                        <input type="file" className="hidden" accept="video/*" onChange={handleVideoUpload} disabled={uploadingVideo || loading} />
+                      </label>
+                    </div>
                   </div>
                   <div>
                     <label className="mb-2 block text-sm font-medium text-gray-300">Mô tả khóa học</label>
@@ -199,8 +268,13 @@ export default function AdminPanel({ onExit }) {
                       placeholder="Nội dung chi tiết..." />
                   </div>
                   <button type="submit" disabled={loading} className="w-full rounded-lg bg-blue-600 px-4 py-3 font-medium text-white transition hover:bg-blue-500 disabled:opacity-50">
-                    {loading ? "Đang xử lý..." : "Tạo khóa học"}
+                    {loading ? "Đang xử lý..." : (editCourseId ? "Lưu thay đổi" : "Tạo khóa học")}
                   </button>
+                  {editCourseId && (
+                    <button type="button" onClick={() => { resetForm(); setActiveView("list"); }} disabled={loading} className="w-full rounded-lg bg-gray-800 px-4 py-3 font-medium text-white transition hover:bg-gray-700 disabled:opacity-50 mt-2">
+                      Hủy thao tác
+                    </button>
+                  )}
                 </form>
               </div>
               
@@ -217,6 +291,8 @@ export default function AdminPanel({ onExit }) {
                   <h3 className="mb-4 text-sm font-medium text-gray-300">Xem trước Video</h3>
                   {previewId ? (
                     <iframe src={`https://www.youtube.com/embed/${previewId}?rel=0`} className="w-full aspect-video rounded-lg bg-gray-800" title="Preview" frameBorder="0" allowFullScreen />
+                  ) : videoUrl && !videoUrl.includes("youtube.com") && !videoUrl.includes("youtu.be") ? (
+                    <video src={videoUrl} controls className="w-full aspect-video rounded-lg bg-gray-800 object-cover" />
                   ) : (
                     <div className="flex w-full aspect-video items-center justify-center rounded-lg bg-gray-800 text-sm text-gray-500">Chưa có video</div>
                   )}
@@ -243,8 +319,9 @@ export default function AdminPanel({ onExit }) {
                       <td className="px-6 py-4 font-medium text-white">#{course.id}</td>
                       <td className="px-6 py-4">{course.title}</td>
                       <td className="px-6 py-4 text-emerald-400">{course.priceEth} ETH</td>
-                      <td className="px-6 py-4">
-                        <a href={course.videoUrl} target="_blank" rel="noreferrer" className="text-blue-400 hover:underline">Xem nội dung</a>
+                      <td className="px-6 py-4 flex gap-3">
+                        <a href={course.videoUrl} target="_blank" rel="noreferrer" className="text-blue-400 hover:underline">Xem video</a>
+                        <button onClick={() => handleEdit(course)} className="text-amber-400 hover:underline">Sửa</button>
                       </td>
                     </tr>
                   )) : (

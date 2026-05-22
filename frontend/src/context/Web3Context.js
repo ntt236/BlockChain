@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import { toast } from 'react-hot-toast';
 import { ethers } from 'ethers';
 import {
@@ -9,6 +9,7 @@ import {
   getContractBalance,
   purchaseCourse as purchaseCourseApi,
   createCourse as createCourseApi,
+  updateCourse as updateCourseApi,
   withdrawFunds as withdrawFundsApi,
   addReview as addReviewApi,
   getBalance
@@ -166,6 +167,23 @@ export const Web3Provider = ({ children }) => {
     }
   };
 
+  const updateCourse = async (courseId, title, priceEth, videoUrl, description, imageUrl) => {
+    if (!signer) return toast.error("Vui lòng kết nối ví!");
+    
+    const toastId = toast.loading("Đang cập nhật khóa học...");
+    setLoading(true);
+    try {
+      await updateCourseApi(signer, courseId, title, priceEth, videoUrl, description, imageUrl);
+      toast.success("Cập nhật thành công!", { id: toastId });
+      await refreshData();
+    } catch (error) {
+      toast.error(error.reason || "Lỗi cập nhật", { id: toastId });
+      throw error;
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const withdrawFunds = async () => {
     if (!signer) return;
     const toastId = toast.loading("Đang rút tiền...");
@@ -198,25 +216,26 @@ export const Web3Provider = ({ children }) => {
     }
   };
 
+  const contextValue = useMemo(() => ({
+    account,
+    balance,
+    isAdmin,
+    courses,
+    ownerships,
+    contractBalance,
+    loading,
+    dataLoading,
+    connectWallet,
+    purchaseCourse,
+    createCourse,
+    updateCourse,
+    withdrawFunds,
+    addReview,
+    refreshData
+  }), [account, balance, isAdmin, courses, ownerships, contractBalance, loading, dataLoading, refreshData]);
+
   return (
-    <Web3Context.Provider
-      value={{
-        account,
-        balance,
-        isAdmin,
-        courses,
-        ownerships,
-        contractBalance,
-        loading,
-        dataLoading,
-        connectWallet,
-        purchaseCourse,
-        createCourse,
-        withdrawFunds,
-        addReview,
-        refreshData
-      }}
-    >
+    <Web3Context.Provider value={contextValue}>
       {children}
     </Web3Context.Provider>
   );

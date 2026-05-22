@@ -19,6 +19,7 @@ export default function App() {
   // Search & Filter
   const [searchTerm, setSearchTerm] = useState("");
   const [maxPrice, setMaxPrice] = useState("");
+  const [minRating, setMinRating] = useState("");
 
   // Handle mua khóa học
   const handlePurchase = async (courseId, priceEth) => {
@@ -41,6 +42,10 @@ export default function App() {
   const filteredCourses = courses.filter((c) => {
     if (searchTerm && !c.title.toLowerCase().includes(searchTerm.toLowerCase())) return false;
     if (maxPrice && parseFloat(c.priceEth) > parseFloat(maxPrice)) return false;
+    if (minRating) {
+      const cRating = c.reviewCount === 0 ? 0 : (c.totalRating / c.reviewCount);
+      if (cRating < parseFloat(minRating)) return false;
+    }
     return true;
   });
 
@@ -144,6 +149,22 @@ export default function App() {
                           className="h-10 w-full sm:w-40 rounded-lg border border-gray-800 bg-gray-900/50 pl-9 pr-4 text-sm text-gray-100 placeholder-gray-500 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 transition-colors"
                           step="0.01" min="0"
                         />
+                      </div>
+                      <div className="relative">
+                        <Filter className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
+                        <select
+                          value={minRating}
+                          onChange={(e) => setMinRating(e.target.value)}
+                          className="h-10 w-full sm:w-36 rounded-lg border border-gray-800 bg-gray-900/50 pl-9 pr-8 text-sm text-gray-100 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 transition-colors appearance-none"
+                        >
+                          <option value="">Mọi đánh giá</option>
+                          <option value="4.5">Từ 4.5 ⭐</option>
+                          <option value="4.0">Từ 4.0 ⭐</option>
+                          <option value="3.5">Từ 3.5 ⭐</option>
+                        </select>
+                        <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-500">
+                          <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
+                        </div>
                       </div>
                     </div>
                   </div>

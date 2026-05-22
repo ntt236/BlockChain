@@ -103,6 +103,22 @@ contract CoursePlatform {
         emit CourseCreated(courseCount, _title, _price, msg.sender);
     }
 
+    /// @notice Cập nhật thông tin khóa học (chỉ Admin)
+    function updateCourse(uint _courseId, string memory _title, uint _price, string memory _videoUrl, string memory _description, string memory _imageUrl) public onlyAdmin {
+        require(_courseId > 0 && _courseId <= courseCount, "Khoa hoc khong ton tai");
+        require(_price > 0, "Gia khoa hoc phai lon hon 0");
+        require(bytes(_title).length > 0, "Tieu de khong duoc de trong");
+        require(bytes(_videoUrl).length > 0, "Link video khong duoc de trong");
+        require(bytes(_imageUrl).length > 0, "Link anh khong duoc de trong");
+        
+        Course storage c = courses[_courseId];
+        c.title = _title;
+        c.price = _price;
+        c.videoUrl = _videoUrl;
+        c.description = _description;
+        c.imageUrl = _imageUrl;
+    }
+
     /// @notice Mua một khóa học bằng ETH
     /// @param _courseId ID của khóa học muốn mua
     function purchaseCourse(uint _courseId) public payable {
