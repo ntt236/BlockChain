@@ -9,7 +9,7 @@ import { toast } from "react-hot-toast";
 import { uploadToIPFS } from "../utils/pinata";
 
 export default function AdminPanel({ onExit }) {
-  const { createCourse, updateCourse, loading, courses, contractBalance, withdrawFunds } = useWeb3();
+  const { createCourse, updateCourse, toggleCourseStatus, loading, courses, contractBalance, withdrawFunds } = useWeb3();
   
   const [title, setTitle] = useState("");
   const [price, setPrice] = useState("");
@@ -315,13 +315,19 @@ export default function AdminPanel({ onExit }) {
                 </thead>
                 <tbody className="divide-y divide-gray-800">
                   {courses && courses.length > 0 ? courses.map((course) => (
-                    <tr key={course.id} className="hover:bg-gray-800/30">
+                    <tr key={course.id} className={`hover:bg-gray-800/30 ${!course.isActive ? "opacity-50" : ""}`}>
                       <td className="px-6 py-4 font-medium text-white">#{course.id}</td>
-                      <td className="px-6 py-4">{course.title}</td>
+                      <td className="px-6 py-4">
+                        {course.title}
+                        {!course.isActive && <span className="ml-2 text-xs text-red-400 border border-red-400/50 px-2 py-0.5 rounded-full">Đã ẩn</span>}
+                      </td>
                       <td className="px-6 py-4 text-emerald-400">{course.priceEth} ETH</td>
                       <td className="px-6 py-4 flex gap-3">
                         <a href={course.videoUrl} target="_blank" rel="noreferrer" className="text-blue-400 hover:underline">Xem video</a>
                         <button onClick={() => handleEdit(course)} className="text-amber-400 hover:underline">Sửa</button>
+                        <button onClick={() => toggleCourseStatus(course.id)} className={`${course.isActive ? "text-red-400" : "text-emerald-400"} hover:underline`}>
+                          {course.isActive ? "Ẩn" : "Hiện"}
+                        </button>
                       </td>
                     </tr>
                   )) : (

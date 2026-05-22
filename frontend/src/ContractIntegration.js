@@ -164,7 +164,8 @@ export async function fetchAllCourses() {
     description: course.description || "",  // Mô tả on-chain
     imageUrl: course.imageUrl || "",        // Thumbnail on-chain
     totalRating: Number(course.totalRating || 0),
-    reviewCount: Number(course.reviewCount || 0)
+    reviewCount: Number(course.reviewCount || 0),
+    isActive: course.isActive
   }));
 
   return courses;
@@ -258,6 +259,16 @@ export async function updateCourse(signer, courseId, title, priceEth, videoUrl, 
   const contract = getContractInstance(signer);
   const priceWei = ethers.parseEther(priceEth.toString());
   const tx = await contract.updateCourse(courseId, title, priceWei, videoUrl, description || "", imageUrl || "");
+  const receipt = await tx.wait();
+  return receipt;
+}
+
+/**
+ * Bật/Tắt trạng thái bán khóa học (chỉ Admin)
+ */
+export async function toggleCourseStatus(signer, courseId) {
+  const contract = getContractInstance(signer);
+  const tx = await contract.toggleCourseStatus(courseId);
   const receipt = await tx.wait();
   return receipt;
 }
@@ -376,7 +387,7 @@ export async function getAllBuyers() {
 export { CONTRACT_ADDRESS };
 
 /**
- * L?y l?ch s? giao d?ch mua kh�a h?c c?a User
+ * L?y l?ch s? giao d?ch mua kh�a h?c c?a User
  */
 export async function getTransactionHistory(provider, userAddress) {
   try {

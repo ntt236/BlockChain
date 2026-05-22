@@ -20,6 +20,7 @@ contract CoursePlatform {
         string imageUrl;   // URL hình ảnh thumbnail của khóa học
         uint totalRating;  // Tổng số sao đánh giá (để tính trung bình)
         uint reviewCount;  // Tổng số lượt đánh giá
+        bool isActive;     // Trạng thái (true = đang bán, false = đã ẩn)
     }
 
     /// @notice Cấu trúc lưu một đánh giá (Review)
@@ -95,7 +96,7 @@ contract CoursePlatform {
         require(bytes(_imageUrl).length > 0, "Link anh khong duoc de trong");
 
         courseCount++;
-        courses[courseCount] = Course(courseCount, _title, _price, msg.sender, _videoUrl, _description, _imageUrl, 0, 0);
+        courses[courseCount] = Course(courseCount, _title, _price, msg.sender, _videoUrl, _description, _imageUrl, 0, 0, true);
         
         // Mặc định Admin sở hữu khóa học vừa tạo
         ownedCourses[msg.sender][courseCount] = true;
@@ -119,6 +120,12 @@ contract CoursePlatform {
         c.imageUrl = _imageUrl;
     }
 
+    /// @notice Thay đổi trạng thái Ẩn/Hiện của khóa học (chỉ Admin)
+    function toggleCourseStatus(uint _courseId) public onlyAdmin {
+        require(_courseId > 0 && _courseId <= courseCount, "Khoa hoc khong ton tai");
+        courses[_courseId].isActive = !courses[_courseId].isActive;
+    }
+
     /// @notice Mua một khóa học bằng ETH
     /// @param _courseId ID của khóa học muốn mua
     function purchaseCourse(uint _courseId) public payable {
@@ -127,6 +134,9 @@ contract CoursePlatform {
 
         // Kiểm tra khóa học tồn tại (ID hợp lệ)
         require(_course.id > 0 && _course.id <= courseCount, "Khoa hoc khong ton tai");
+
+        // Kiểm tra khóa học còn đang mở bán
+        require(_course.isActive, "Khoa hoc nay da ngung ban");
 
         // Kiểm tra người dùng chưa sở hữu khóa học này
         require(!ownedCourses[msg.sender][_courseId], "Ban da so huu khoa hoc nay roi");

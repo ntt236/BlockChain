@@ -40,6 +40,7 @@ export default function App() {
 
   // Lọc khóa học
   const filteredCourses = courses.filter((c) => {
+    if (!c.isActive) return false;
     if (searchTerm && !c.title.toLowerCase().includes(searchTerm.toLowerCase())) return false;
     if (maxPrice && parseFloat(c.priceEth) > parseFloat(maxPrice)) return false;
     if (minRating) {

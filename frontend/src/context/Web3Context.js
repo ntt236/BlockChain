@@ -12,6 +12,7 @@ import {
   updateCourse as updateCourseApi,
   withdrawFunds as withdrawFundsApi,
   addReview as addReviewApi,
+  toggleCourseStatus as toggleCourseStatusApi,
   getBalance
 } from '../ContractIntegration';
 
@@ -216,6 +217,22 @@ export const Web3Provider = ({ children }) => {
     }
   };
 
+  const toggleCourseStatus = async (courseId) => {
+    if (!signer) return;
+    const toastId = toast.loading("Đang cập nhật trạng thái...");
+    setLoading(true);
+    try {
+      await toggleCourseStatusApi(signer, courseId);
+      toast.success("Cập nhật trạng thái thành công!", { id: toastId });
+      await refreshData();
+    } catch (error) {
+      toast.error(error.reason || "Lỗi cập nhật trạng thái", { id: toastId });
+      throw error;
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const contextValue = useMemo(() => ({
     account,
     balance,
@@ -229,6 +246,7 @@ export const Web3Provider = ({ children }) => {
     purchaseCourse,
     createCourse,
     updateCourse,
+    toggleCourseStatus,
     withdrawFunds,
     addReview,
     refreshData
