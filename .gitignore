@@ -1,0 +1,42 @@
+# Dependencies
+node_modules/
+frontend/node_modules/
+
+# Truffle & Smart Contract Build Artifacts
+build/
+coverage/
+coverage.json
+
+# React Frontend Build Output
+frontend/build/
+
+# Environment Variables & Secrets (QUAN TRỌNG NHẤT)
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+secrets.json
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Editor directories and files
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# OS Generated Files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
